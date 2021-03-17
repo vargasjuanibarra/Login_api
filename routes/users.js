@@ -1,89 +1,92 @@
-const express = require('express')
-const router = express.Router()
-const bcrypt = require('bcryptjs')
-
-const user = require('../models/userSchemaModel')
-
-// LOGIN PAGE
-router.get('/login', (req, res) => {
-    res.render('login')
-})
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcrypt');
+const passport = require('passport');
+// Load User model
+const User = require('../models/userSchemaModel');
 
 
-// REGISTER PAGE
-router.get('/register', (req, res) => {
-    res.render('register')
-})
+// Login Page
+router.get('/login', (req, res) => res.render('login'));
+router.post('/login', (req, res) => res.render('dashboard'));
+
+
+// Register Page
+router.get('/register', (req, res) => res.render('register'));
+
+// Register
 router.post('/register', (req, res) => {
-    const { name, email, password, password2 } = req.body
-    let errors = []
+  const { name, email, password, password2 } = req.body;
+  let errors = [];
 
-    // CHECK REQUIRED FIELDS
-    // if(!name || !email || !password || !password2) {
-    //     errors.push({ msg: 'Please fill in all fields'})
-    // }
+  if (!name || !email || !password || !password2) {
+    errors.push({ msg: 'Please enter all fields' });
+  }
 
-    // CHECK IF PASSWORDS MATCH
-    if (password !== password2) {
-        errors.push({ msg: 'Password do not match' })
-    }
+  if (password != password2) {
+    errors.push({ msg: 'Passwords do not match' });
+  }
 
+  if (password.length < 6) {
+    errors.push({ msg: 'Password must be at least 6 characters' });
+  }
 
-    // CHECK PASSWORD LENGTH
-    if (password.length < 8) {
-        errors.push({ msg: 'Password must be atleast 8 characters' })
-    }
-
-    if (errors.length > 0) {
+  if (errors.length > 0) {
+    res.render('register', {
+      errors,
+      name,
+      email,
+      password,
+      password2
+    });
+  } else {
+    User.findOne({ email: email }).then(user => {
+      if (user) {
+        errors.push({ msg: 'Email already exists' });
         res.render('register', {
-            errors,
-            name,
-            email,
-            password,
-            password2
-        })
+          errors,
+          name,
+          email,
+          password,
+          password2
+        });
+      } else {
+        const newUser = new User({
+          name,
+          email,
+          password
+        });
 
-    } else {
-        user.findOne({ email: email })
-            .then(User => {
-                if (User) {
-                    // USER EXISTS
-                    errors.push({ msg: 'Email already exists' })
-                    res.render('register', {
-                        errors,
-                        name,
-                        email,
-                        password,
-                        password2
-                    })
-                } else {
-                    const newUser = new user({
-                        name,
-                        email,
-                        password
-                    });
+        bcrypt.genSalt(10, (err, salt) => {
+          newUser.password = "";
+          bcrypt.hash(newUser.password, salt, function (err, hash) {
+          newUser.password = hash;
+            if (err) throw err;
+            newUser
+              .save()
+              .then(user => {
+                req.flash(
+                  'success_msg',
+                  'You are now registered and can log in'
+                );
+                res.redirect('/users/login');
+              })
+              .catch(err => console.log(err));
+          });
+        });
+      }
+    });
+  }
+});
 
-                    // HASH PASSWORD
-                    bcrypt.genSalt(10, (err, salt) => 
-                        bcrypt.hash(newUser.password, salt, (err, hash) => {
-                            if(err) console.log(err)
-                            
-                            // SET PASSWORD TO HASHED
-                            newUser.password = hash;
-                            // SAVE USER
-                            newUser.save()
-                                .then(User => {
-                                    res.redirect('/users/login')
-                                })
-                                .catch(err => console.log(err));
-                        
-                    }))
 
-                }
-            })
-    }
+// LOGIN HANDLE
+router.post('/login', (req, res, next) => {
+  passport.authenticate('local', {
+    successRedirect: '/dashboard',
+    failureRedirect: '/users/login',
+    failureFlash: true
+  })(req, res, next); 
 })
 
-
-
-module.exports = router
+module.exports = router;
