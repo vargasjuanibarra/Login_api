@@ -1,4 +1,4 @@
-if(process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config()
 }
 
@@ -24,35 +24,35 @@ app.set('layout', 'layouts/layout')
 // MONGO DATABASE CONNECTION
 
 const db = mongoose.connection
-mongoose.connect(process.env.DATABASE_URL, { useNewUrlParser: true, useUnifiedTopology: true})
+mongoose.connect(process.env.DATABASE_URL, { useNewUrlParser: true, useUnifiedTopology: true })
 db.on('error', error => console.error('error'))
 db.once('open', () => console.log('Connected to mongoose'))
 
 // BODYPARSER
-app.use(express.urlencoded({ extended: true}))
+app.use(express.urlencoded({ extended: true }))
 
 // EXPRESS SESSION
 app.use(session({
     secret: 'secret',
     resave: true,
     saveUninitialized: true
-  }))
+}))
 
-  // PASSPORT MIDDLEWARE
-  app.use(passport.initialize());
-  app.use(passport.session());
+// PASSPORT MIDDLEWARE
+app.use(passport.initialize());
+app.use(passport.session());
 
-  // CONNECT FLASH
-  app.use(flash())
+// CONNECT FLASH
+app.use(flash())
 
-  // GLOBAL VARS FOR SUCCES OR ERROR MESSAGES
-  app.use((req, res, next) => {
-      res.locals.success_msg = req.flash('success_msg');
-      res.locals.error_msg = req.flash('error_msg');
-      res.locals.error = req.flash('error');
-      next();
+// GLOBAL VARS FOR SUCCES OR ERROR MESSAGES
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error'); // msg for incorrect password or username
+    next();
 
-  })
+})
 
 
 // ROUTES
@@ -60,7 +60,7 @@ app.use(session({
 const indexRouter = require('./routes/index')
 const users = require('./routes/users')
 
-app.use('/', indexRouter) 
+app.use('/', indexRouter)
 app.use('/users', users)
 
 
@@ -69,4 +69,4 @@ app.use('/users', users)
 // SERVER PORT
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, console.log(`Server running on port ${PORT}`))    
+app.listen(PORT, console.log(`Server running on port ${PORT}`))
